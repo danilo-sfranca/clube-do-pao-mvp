@@ -55,6 +55,7 @@ button:disabled { cursor: not-allowed; opacity: 0.65; }
 .form-panel { border: 1px solid #f0dfd2; border-radius: 2rem; background: rgba(255, 255, 255, 0.8); padding: 1.25rem; box-shadow: 0 24px 60px -44px #a96743; }
 .field-input { width: 100%; border: 1px solid #ead9ce; border-radius: 0.95rem; background: #fffdfb; padding: 0.9rem 1rem 0.9rem 2.9rem; color: #30231d; font-size: 0.95rem; transition: border 160ms ease, box-shadow 160ms ease; }
 .field-input::placeholder { color: #b7a295; }
+.field-select { appearance: none; }
 .field-input:focus { border-color: #e98a65; box-shadow: 0 0 0 4px #fce4d9; outline: none; }
 .success-panel { display: flex; min-height: 350px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #bfe2c1; border-radius: 2rem; background: #f0fbef; padding: 2rem; text-align: center; }
 .error-message { display: flex; align-items: center; gap: 0.5rem; border-radius: 0.9rem; background: #fff0ed; padding: 0.8rem 1rem; color: #b33d32; font-size: 0.875rem; line-height: 1.4; }

@@ -80,20 +80,20 @@ function HomePage() {
   )
 }
 
-function Field({ label, name, value, onChange, placeholder, type = 'text', icon: Icon }) {
+function Field({ label, name, value, onChange, placeholder, type = 'text', icon: Icon, min }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-bold text-[#574238]">{label}</span>
       <span className="relative block">
         <Icon className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#b49584]" size={18} />
-        <input className="field-input" name={name} value={value} onChange={onChange} placeholder={placeholder} type={type} required />
+        <input className="field-input" name={name} value={value} onChange={onChange} placeholder={placeholder} type={type} min={min} required />
       </span>
     </label>
   )
 }
 
 function CustomerPage() {
-  const [form, setForm] = useState({ nome: '', endereco: '', whatsapp: '' })
+  const [form, setForm] = useState({ nome: '', endereco: '', whatsapp: '', quantidade: '1', horario_entrega: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
@@ -111,7 +111,7 @@ function CustomerPage() {
       const response = await fetch(`${apiUrl}/clientes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, quantidade: Number(form.quantidade) }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Não foi possível concluir sua assinatura.')
@@ -149,6 +149,8 @@ function CustomerPage() {
               <Field label="Nome completo" name="nome" value={form.nome} onChange={handleChange} placeholder="Como podemos chamar você?" icon={Users} />
               <Field label="Endereço de entrega" name="endereco" value={form.endereco} onChange={handleChange} placeholder="Rua, número e complemento" icon={MapPin} />
               <Field label="WhatsApp" name="whatsapp" value={form.whatsapp} onChange={handleChange} placeholder="(00) 00000-0000" type="tel" icon={Phone} />
+              <Field label="Quantidade de pães" name="quantidade" value={form.quantidade} onChange={handleChange} placeholder="Ex.: 4" type="number" min="1" icon={Users} />
+              <label className="block"><span className="mb-2 block text-sm font-bold text-[#574238]">Faixa de horário</span><span className="relative block"><Clock3 className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[#b49584]" size={18} /><select className="field-input field-select" name="horario_entrega" value={form.horario_entrega} onChange={handleChange} required><option value="" disabled>Escolha o melhor horário</option><option value="05:30-06:00">05:30 - 06:00</option><option value="06:00-06:30">06:00 - 06:30</option><option value="06:30-07:00">06:30 - 07:00</option><option value="07:00-07:30">07:00 - 07:30</option><option value="07:30-08:00">07:30 - 08:00</option></select></span></label>
             </div>
             {error && <p className="error-message" role="alert"><CircleAlert size={17} />{error}</p>}
             <button className="button-primary mt-7 w-full" type="submit" disabled={isSubmitting}>
@@ -164,19 +166,25 @@ function CustomerPage() {
 
 function BakeryPage() {
   const [demand, setDemand] = useState(null)
+  const [deliveryRoute, setDeliveryRoute] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDispatching, setIsDispatching] = useState(false)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
-  async function loadDemand() {
+  async function loadDashboard() {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch(`${apiUrl}/pcp/demanda`)
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Não foi possível carregar a demanda.')
-      setDemand(data.total_production)
+      const [demandResponse, routeResponse] = await Promise.all([
+        fetch(`${apiUrl}/pcp/demanda`),
+        fetch(`${apiUrl}/pcp/rota`),
+      ])
+      const [demandData, routeData] = await Promise.all([demandResponse.json(), routeResponse.json()])
+      if (!demandResponse.ok) throw new Error(demandData.error || 'Não foi possível carregar a demanda.')
+      if (!routeResponse.ok) throw new Error(routeData.error || 'Não foi possível carregar a rota.')
+      setDemand(demandData)
+      setDeliveryRoute(routeData.rota)
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -184,7 +192,7 @@ function BakeryPage() {
     }
   }
 
-  useEffect(() => { loadDemand() }, [])
+  useEffect(() => { loadDashboard() }, [])
 
   async function startRoute() {
     setIsDispatching(true)
@@ -207,16 +215,35 @@ function BakeryPage() {
       <main className="mx-auto max-w-5xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
         <div className="animate-rise flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div><p className="eyebrow">Operação de hoje</p><h1 className="page-title">Painel da padaria</h1><p className="page-lead">Tudo pronto para a próxima fornada.</p></div>
-          <button className="icon-button self-start sm:self-auto" onClick={loadDemand} disabled={isLoading} aria-label="Atualizar demanda" title="Atualizar demanda"><RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} /></button>
+          <button className="icon-button self-start sm:self-auto" onClick={loadDashboard} disabled={isLoading} aria-label="Atualizar demanda e rota" title="Atualizar demanda e rota"><RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} /></button>
         </div>
         {error && <p className="error-message mt-7" role="alert"><CircleAlert size={17} />{error}</p>}
         <section className="demand-card animate-rise mt-8">
           <div className="flex items-start justify-between"><span className="grid size-12 place-items-center rounded-2xl bg-[#fff0e6] text-[#d95a31]"><Users size={23} /></span><span className="status-pill"><span className="size-2 rounded-full bg-[#53a85d]" />Atualizado agora</span></div>
           <p className="mt-10 text-sm font-bold uppercase tracking-[0.13em] text-[#a27762]">Demanda diária</p>
-          <div className="mt-1 flex items-end gap-3"><strong className="font-display text-7xl font-bold leading-none tracking-[-0.06em] text-[#30231d]">{isLoading ? '—' : demand}</strong><span className="pb-1 text-lg font-semibold text-[#806a5d]">kits de pão</span></div>
-          <p className="mt-5 flex items-center gap-2 text-sm text-[#91796a]"><Clock3 size={16} />Contagem de assinaturas ativas</p>
+          <div className="mt-1 flex items-end gap-3"><strong className="font-display text-7xl font-bold leading-none tracking-[-0.06em] text-[#30231d]">{isLoading ? '—' : demand?.total_production ?? 0}</strong><span className="pb-1 text-lg font-semibold text-[#806a5d]">pães a produzir</span></div>
+          <p className="mt-5 flex items-center gap-2 text-sm text-[#91796a]"><Clock3 size={16} />{isLoading ? 'Atualizando assinaturas...' : `${demand?.total_customers ?? 0} clientes ativos`}</p>
         </section>
-        <section className="mt-8 rounded-[2rem] border border-[#f0dfd2] bg-white/70 p-6 sm:p-8"><div className="flex items-start gap-4"><span className="mt-1 grid size-10 shrink-0 place-items-center rounded-xl bg-[#30231d] text-[#ffd6a8]"><MapPin size={19} /></span><div><h2 className="font-display text-2xl font-bold">Rota do bairro</h2><p className="mt-1 text-sm leading-6 text-[#866e60]">Todos os assinantes ativos fazem parte da rota de hoje.</p></div></div><button className="button-primary mt-7 min-h-14 w-full text-base sm:w-auto sm:min-w-72" onClick={startRoute} disabled={isDispatching || isLoading}>{isDispatching ? <><LoaderCircle className="animate-spin" size={20} /> Disparando avisos...</> : <>Iniciar Rota de Entrega <ArrowRight size={19} /></>}</button></section>
+        <section className="mt-8 rounded-[2rem] border border-[#f0dfd2] bg-white/70 p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <span className="mt-1 grid size-10 shrink-0 place-items-center rounded-xl bg-[#30231d] text-[#ffd6a8]"><MapPin size={19} /></span>
+            <div><h2 className="font-display text-2xl font-bold">Rota do bairro</h2><p className="mt-1 text-sm leading-6 text-[#866e60]">Entregas organizadas do horário mais cedo para o mais tarde.</p></div>
+          </div>
+          <div className="mt-7 overflow-hidden rounded-2xl border border-[#f0dfd2] bg-[#fffdfb]">
+            <div className="hidden grid-cols-[1.1fr_1.5fr_1fr_0.7fr] gap-4 border-b border-[#f0dfd2] bg-[#fff6ef] px-4 py-3 text-xs font-extrabold uppercase tracking-[0.1em] text-[#a27762] sm:grid">
+              <span>Horário</span><span>Cliente</span><span>Endereço</span><span>Quantidade</span>
+            </div>
+            {isLoading ? <p className="px-4 py-8 text-center text-sm text-[#91796a]">Carregando rota...</p> : deliveryRoute.length === 0 ? <p className="px-4 py-8 text-center text-sm text-[#91796a]">Nenhum cliente ativo na rota de hoje.</p> : deliveryRoute.map((customer, index) => (
+              <div className="grid gap-2 border-b border-[#f0dfd2] px-4 py-4 last:border-b-0 sm:grid-cols-[1.1fr_1.5fr_1fr_0.7fr] sm:items-center sm:gap-4" key={customer.id}>
+                <span className="flex items-center gap-2 text-sm font-extrabold text-[#d25730]"><span className="grid size-6 place-items-center rounded-full bg-[#fff0e6] text-xs">{index + 1}</span>{customer.horario_entrega}</span>
+                <span className="font-bold text-[#44332a]">{customer.nome}</span>
+                <span className="text-sm text-[#806a5d]">{customer.endereco}</span>
+                <span className="text-sm font-bold text-[#574238]">{customer.quantidade} pães</span>
+              </div>
+            ))}
+          </div>
+          <button className="button-primary mt-7 min-h-14 w-full text-base sm:w-auto sm:min-w-72" onClick={startRoute} disabled={isDispatching || isLoading}>{isDispatching ? <><LoaderCircle className="animate-spin" size={20} /> Disparando avisos...</> : <>Iniciar Rota de Entrega <ArrowRight size={19} /></>}</button>
+        </section>
       </main>
       {toast && <div className="toast" role="status"><span className="grid size-9 place-items-center rounded-xl bg-[#d5f0d4] text-[#317c42]"><Check size={18} strokeWidth={3} /></span><div><strong className="block text-sm text-[#285e35]">Rota iniciada</strong><span className="text-xs text-[#4d7656]">{toast}</span></div></div>}
     </PageShell>
