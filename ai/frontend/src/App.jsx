@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Check, ChevronLeft, CircleAlert, Clock3, Flame, LoaderCircle, MapPin, Phone, RefreshCw, Users } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, CircleAlert, Clock3, Flame, LoaderCircle, MapPin, Phone, RefreshCw, Trash2, Users } from 'lucide-react'
 import { Link, Route, Routes } from 'react-router-dom'
+import Sobre from './pages/Sobre'
 
 const apiUrl = 'http://localhost:3000/api'
 
@@ -20,7 +21,13 @@ function PageShell({ children, backTo = '/', backLabel = 'Inicio' }) {
     <div className="min-h-screen bg-[#fffaf2] text-[#30231d]">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <BrandMark />
-        {backTo !== null && (
+        {backTo === null ? (
+          <nav aria-label="Navegação principal">
+            <Link className="button-secondary !rounded-xl !px-4 !py-2 text-sm" to="/sobre">
+              Sobre o projeto <ArrowRight size={16} />
+            </Link>
+          </nav>
+        ) : (
           <Link className="group inline-flex items-center gap-1.5 text-sm font-bold text-[#866e60] transition hover:text-[#d45128]" to={backTo}>
             <ChevronLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
             {backLabel}
@@ -169,6 +176,7 @@ function BakeryPage() {
   const [deliveryRoute, setDeliveryRoute] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDispatching, setIsDispatching] = useState(false)
+  const [isClearing, setIsClearing] = useState(false)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
@@ -193,6 +201,26 @@ function BakeryPage() {
   }
 
   useEffect(() => { loadDashboard() }, [])
+
+  async function clearCustomers() {
+    const confirmed = window.confirm('Tem certeza que deseja excluir todos os clientes cadastrados? Esta ação não pode ser desfeita.')
+    if (!confirmed) return
+
+    setIsClearing(true)
+    setError('')
+    try {
+      const response = await fetch(`${apiUrl}/clientes`, { method: 'DELETE' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Não foi possível limpar a base de clientes.')
+      setToast(`Base limpa: ${data.deleted_customers} clientes removidos.`)
+      window.setTimeout(() => setToast(''), 4500)
+      await loadDashboard()
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setIsClearing(false)
+    }
+  }
 
   async function startRoute() {
     setIsDispatching(true)
@@ -242,7 +270,12 @@ function BakeryPage() {
               </div>
             ))}
           </div>
-          <button className="button-primary mt-7 min-h-14 w-full text-base sm:w-auto sm:min-w-72" onClick={startRoute} disabled={isDispatching || isLoading}>{isDispatching ? <><LoaderCircle className="animate-spin" size={20} /> Disparando avisos...</> : <>Iniciar Rota de Entrega <ArrowRight size={19} /></>}</button>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <button className="button-primary min-h-14 w-full text-base sm:w-auto sm:min-w-72" onClick={startRoute} disabled={isDispatching || isLoading || isClearing}>{isDispatching ? <><LoaderCircle className="animate-spin" size={20} /> Disparando avisos...</> : <>Iniciar Rota de Entrega <ArrowRight size={19} /></>}</button>
+            <button className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-[#e6b5aa] bg-[#fff7f5] px-5 text-sm font-bold text-[#a63f32] transition hover:bg-[#ffebe7] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto" onClick={clearCustomers} disabled={isLoading || isClearing || isDispatching}>
+              {isClearing ? <><LoaderCircle className="animate-spin" size={18} /> Limpando base...</> : <><Trash2 size={18} /> Limpar base de clientes</>}
+            </button>
+          </div>
         </section>
       </main>
       {toast && <div className="toast" role="status"><span className="grid size-9 place-items-center rounded-xl bg-[#d5f0d4] text-[#317c42]"><Check size={18} strokeWidth={3} /></span><div><strong className="block text-sm text-[#285e35]">Rota iniciada</strong><span className="text-xs text-[#4d7656]">{toast}</span></div></div>}
@@ -251,5 +284,5 @@ function BakeryPage() {
 }
 
 export default function App() {
-  return <Routes><Route path="/" element={<HomePage />} /><Route path="/cliente" element={<CustomerPage />} /><Route path="/padaria" element={<BakeryPage />} /></Routes>
+  return <Routes><Route path="/" element={<HomePage />} /><Route path="/cliente" element={<CustomerPage />} /><Route path="/padaria" element={<BakeryPage />} /><Route path="/sobre" element={<Sobre />} /></Routes>
 }

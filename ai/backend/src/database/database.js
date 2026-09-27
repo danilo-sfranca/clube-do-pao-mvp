@@ -17,10 +17,23 @@ export async function initializeDatabase() {
       nome TEXT NOT NULL,
       endereco TEXT NOT NULL,
       whatsapp TEXT NOT NULL,
+      quantidade INTEGER NOT NULL DEFAULT 1,
+      horario_entrega TEXT NOT NULL DEFAULT '05:30-06:00',
       status TEXT NOT NULL DEFAULT 'ACTIVE',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `)
+
+  const columns = await all('PRAGMA table_info(clientes)')
+  const columnNames = new Set(columns.map((column) => column.name))
+
+  if (!columnNames.has('quantidade')) {
+    await run("ALTER TABLE clientes ADD COLUMN quantidade INTEGER NOT NULL DEFAULT 1")
+  }
+
+  if (!columnNames.has('horario_entrega')) {
+    await run("ALTER TABLE clientes ADD COLUMN horario_entrega TEXT NOT NULL DEFAULT '05:30-06:00'")
+  }
 }
 
 export function run(sql, parameters = []) {
