@@ -1,11 +1,12 @@
 import 'dotenv/config'
 import cors from 'cors'
 import express from 'express'
+import { pathToFileURL } from 'node:url'
 import { initializeDatabase } from './database/database.js'
 import customerRoutes from './routes/customer-routes.js'
 import pcpRoutes from './routes/pcp-routes.js'
 
-const app = express()
+export const app = express()
 const port = Number(process.env.PORT || 3000)
 
 app.use(cors())
@@ -17,14 +18,16 @@ app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok', service: 'clube-do-pao-backend' })
 })
 
-async function startServer() {
+export async function startServer() {
   await initializeDatabase()
-  app.listen(port, () => {
+  return app.listen(port, () => {
     console.log(`Backend running at http://localhost:${port}`)
   })
 }
 
-startServer().catch((error) => {
-  console.error('Nao foi possivel iniciar o backend:', error)
-  process.exit(1)
-})
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  startServer().catch((error) => {
+    console.error('Nao foi possivel iniciar o backend:', error)
+    process.exit(1)
+  })
+}
