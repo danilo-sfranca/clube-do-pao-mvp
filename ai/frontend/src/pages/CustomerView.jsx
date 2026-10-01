@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import { ArrowRight, Check, CircleAlert, Clock3, Flame, LoaderCircle, MapPin, Phone, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageShell } from '../components/PageShell'
-
-const apiUrl = 'http://localhost:3000/api'
+import { useCustomer } from '../hooks/useCustomer'
 
 function Field({ label, name, value, onChange, placeholder, type = 'text', icon: Icon, min }) {
   return (
@@ -18,35 +16,7 @@ function Field({ label, name, value, onChange, placeholder, type = 'text', icon:
 }
 
 export default function CustomerPage() {
-  const [form, setForm] = useState({ nome: '', endereco: '', whatsapp: '', quantidade: '1', horario_entrega: '' })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [isSuccess, setIsSuccess] = useState(false)
-
-  function handleChange(event) {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
-    setIsSubmitting(true)
-
-    try {
-      const response = await fetch(`${apiUrl}/clientes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, quantidade: Number(form.quantidade) }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Não foi possível concluir sua assinatura.')
-      setIsSuccess(true)
-    } catch (requestError) {
-      setError(requestError.message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+  const { form, isSubmitting, error, isSuccess, handleChange, handleSubmit } = useCustomer()
 
   return (
     <PageShell>
