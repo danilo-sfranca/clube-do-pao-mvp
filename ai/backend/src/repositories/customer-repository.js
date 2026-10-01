@@ -1,13 +1,23 @@
-import { all, get, run } from '../database/database.js'
+import { getDatabaseConnection } from '../database/database.js'
+
+const database = getDatabaseConnection()
+
+async function ensureDatabaseReady() {
+  if (!database.database) {
+    await database.initialize()
+  }
+}
 
 export async function createCustomer({ nome, endereco, whatsapp, quantidade, horarioEntrega }) {
-  const result = await run(
+  await ensureDatabaseReady()
+
+  const result = await database.run(
     `INSERT INTO clientes (nome, endereco, whatsapp, quantidade, horario_entrega)
      VALUES (?, ?, ?, ?, ?)`,
     [nome, endereco, whatsapp, quantidade, horarioEntrega],
   )
 
-  return get(
+  return database.get(
     `SELECT id, nome, endereco, whatsapp, quantidade, horario_entrega, status, created_at
      FROM clientes
      WHERE id = ?`,
@@ -16,12 +26,16 @@ export async function createCustomer({ nome, endereco, whatsapp, quantidade, hor
 }
 
 export async function deleteAllCustomers() {
-  const result = await run('DELETE FROM clientes')
+  await ensureDatabaseReady()
+
+  const result = await database.run('DELETE FROM clientes')
   return result.changes
 }
 
 export async function countActiveCustomers() {
-  const result = await get(
+  await ensureDatabaseReady()
+
+  const result = await database.get(
     `SELECT COUNT(*) AS total_customers,
             COALESCE(SUM(quantidade), 0) AS total_production
      FROM clientes
@@ -33,7 +47,9 @@ export async function countActiveCustomers() {
 }
 
 export async function findActiveCustomers() {
-  return all(
+  await ensureDatabaseReady()
+
+  return database.all(
     `SELECT id, nome, endereco, whatsapp, quantidade, horario_entrega
      FROM clientes
      WHERE status = ?

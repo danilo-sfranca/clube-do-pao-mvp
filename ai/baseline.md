@@ -76,3 +76,11 @@ dist/index.html                   0.50 kB │ gzip:  0.31 kB
 dist/assets/index-B2Y9Pvkc.css   26.62 kB │ gzip:  6.37 kB
 dist/assets/index-BU0A8OT3.js   216.98 kB │ gzip: 70.50 kB
 ✓ built in 1.90s
+
+## Backend (Node.js)
+**Data da medição:** Pós-refatoração (Injeção de Dependência SQLite)
+- **Status dos Testes:** 3/3 testes passando (0 falhas)
+- **Cobertura de Linhas:** 70.11%
+- **Cobertura de Branches:** 65.31%
+- **Cobertura de Funções:** 77.42%
+- **Teste de Inicialização (Cold Start):** Servidor iniciou com sucesso, sem erros de "Database is locked".
